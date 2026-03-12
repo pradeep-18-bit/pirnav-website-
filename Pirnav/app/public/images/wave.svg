@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" preserveAspectRatio="none">
+  <g fill="none" stroke="#ffffff" stroke-linecap="round">
+    <path
+      d="M0 170 C90 170 90 120 180 120 C270 120 270 170 360 170 C450 170 450 220 540 220 C630 220 630 170 720 170"
+      stroke-width="6"
+      opacity="0.5"
+    />
+    <path
+      d="M0 200 C90 200 90 150 180 150 C270 150 270 200 360 200 C450 200 450 250 540 250 C630 250 630 200 720 200"
+      stroke-width="3"
+      opacity="0.35"
+    />
+    <path
+      d="M0 135 C90 135 90 95 180 95 C270 95 270 135 360 135 C450 135 450 175 540 175 C630 175 630 135 720 135"
+      stroke-width="2"
+      opacity="0.28"
+    />
+  </g>
+</svg>
