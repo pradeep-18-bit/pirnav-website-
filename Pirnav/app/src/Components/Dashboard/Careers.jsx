@@ -44,7 +44,7 @@ const Careers = () => {
         className="page-banner page-banner-light"
         style={{
           "--banner-image":
-            "url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=3840&q=90')",
+            "url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=2400&q=85')",
         }}
       >
         <div className="section-shell page-banner-content">

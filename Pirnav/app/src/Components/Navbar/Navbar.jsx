@@ -24,6 +24,25 @@ const Navbar = () => {
     return () => window.cancelAnimationFrame(syncScrollState);
   }, [location.pathname]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const navbar = document.querySelector(".navbar");
+
+      if (!navbar) return;
+
+      if (window.scrollY > 40) {
+        navbar.classList.add("scrolled");
+      } else {
+        navbar.classList.remove("scrolled");
+      }
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const closeMobileMenu = () => setMobileOpen(false);
 
   return (
@@ -35,7 +54,7 @@ const Navbar = () => {
           </Link>
         </div>
 
-        <ul className="nav-menu">
+        <ul className="nav-menu nav-links">
           {navLinks.map((link) => (
             <li key={link.to}>
               <NavLink

@@ -78,7 +78,7 @@ const ContactUs = () => {
         className="page-banner page-banner-light"
         style={{
           "--banner-image":
-            "url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=3840&q=90')",
+            "url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=2400&q=85')",
         }}
       >
         <div className="section-shell page-banner-content">

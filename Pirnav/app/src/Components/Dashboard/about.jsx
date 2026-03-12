@@ -12,7 +12,7 @@ const About = () => {
         className="page-banner page-banner-light"
         style={{
           "--banner-image":
-            "url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=3840&q=90')",
+            "url('https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=2400&q=85')",
         }}
       >
         <div className="section-shell page-banner-content">
@@ -111,7 +111,7 @@ const About = () => {
         description="These pillars shape how we approach planning, delivery quality, and long-term client partnerships."
         align="center"
       >
-        <div className="feature-grid">
+        <div className="strength-grid">
           {aboutPillars.map((pillar, index) => (
             <FeatureCard
               key={pillar.title}

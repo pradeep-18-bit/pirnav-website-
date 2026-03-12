@@ -20,7 +20,7 @@ const HeroSection = ({
   return (
     <section className={`hero-section ${className}`.trim()}>
       <div className="hero-noise" />
-      <div ref={ref} className="section-shell hero-grid reveal is-visible">
+      <div ref={ref} className="section-shell hero-grid reveal">
         <div className="hero-copy">
           {eyebrow && <span className="section-eyebrow">{eyebrow}</span>}
           <h1>{title}</h1>
@@ -57,7 +57,14 @@ const HeroSection = ({
         </div>
 
         <div className={`hero-visual ${imageClassName}`.trim()}>
-          {image && <img src={image} alt={imageAlt} loading="eager" />}
+          {image && (
+            <img
+              src={image}
+              alt={imageAlt}
+              loading="lazy"
+              decoding="async"
+            />
+          )}
           {children}
         </div>
       </div>

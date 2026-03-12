@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Briefcase, Building2, CheckCircle2, Cloud, Database, MonitorSmartphone, ShieldCheck, Users, Workflow } from "lucide-react";
 import { Link } from "react-router-dom";
 import Button from "../../components/common/Button";
@@ -13,7 +13,7 @@ const slides = [
     description:
       "We help enterprises modernize technology, accelerate delivery, and scale digital products with reliable engineering support.",
     image:
-      "https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=3840",
+      "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=2200&q=80",
   },
   {
     tag: "Cloud and Platform Modernization",
@@ -21,7 +21,7 @@ const slides = [
     description:
       "Deliver reliable infrastructure, stronger platform operations, and intelligent platforms built for sustainable growth.",
     image:
-      "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=3840",
+      "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2000&q=80",
   },
   {
     tag: "Consulting Led Delivery",
@@ -29,7 +29,7 @@ const slides = [
     description:
       "Partner with experienced engineers building enterprise solutions with execution discipline and measurable outcomes.",
     image:
-      "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=3840",
+      "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=2000&q=80",
   },
   {
     tag: "Cloud Operations and Insights",
@@ -37,7 +37,7 @@ const slides = [
     description:
       "Strengthen platform operations with clearer infrastructure insight, better monitoring, and scalable cloud foundations.",
     image:
-      "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=3840",
+      "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=2000&q=80",
   },
 ];
 
@@ -104,6 +104,7 @@ const strengths = [
 const Dashboard = () => {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const heroCardRef = useRef(null);
 
   useEffect(() => {
     if (isPaused) return undefined;
@@ -115,62 +116,114 @@ const Dashboard = () => {
     return () => window.clearInterval(timer);
   }, [isPaused]);
 
+  useEffect(() => {
+    const heroCard = heroCardRef.current;
+
+    if (!heroCard) return undefined;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+
+    let frameId = null;
+
+    const handleMove = (event) => {
+      const rect = heroCard.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateX = (y - centerY) / 35;
+      const rotateY = (centerX - x) / 35;
+
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+
+      frameId = requestAnimationFrame(() => {
+        heroCard.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+      });
+    };
+
+    const handleLeave = () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+      heroCard.style.transform = "perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
+    };
+
+    heroCard.addEventListener("mousemove", handleMove);
+    heroCard.addEventListener("mouseleave", handleLeave);
+
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+      heroCard.removeEventListener("mousemove", handleMove);
+      heroCard.removeEventListener("mouseleave", handleLeave);
+    };
+  }, []);
+
   return (
     <div className="page-shell">
-      <section className="hero-section homepage-hero">
-        <div className="hero-noise" />
-        <div
-          className="section-shell hero-slider homepage-hero-shell"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          <div className="slider-container">
-            {slides.map((slide, index) => {
-              const isActive = index === activeSlide;
+      <section className="hero hero-section homepage-hero">
+        <div className="hero-card" ref={heroCardRef}>
+          <div
+            className="section-shell hero-slider homepage-hero-shell"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
+            <div className="slider-container">
+              {slides.map((slide, index) => {
+                const isActive = index === activeSlide;
 
-              return (
-                <article
+                return (
+                  <article
+                    key={slide.title}
+                    className={`hero-slide ${isActive ? "hero-slide-active" : ""}`}
+                    aria-hidden={!isActive}
+                  >
+                    <img
+                      src={slide.image}
+                      alt=""
+                      aria-hidden="true"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div className="hero-slide-copy homepage-hero-copy hero-content">
+                      {isActive && (
+                        <>
+                          <span className="section-eyebrow">{slide.tag}</span>
+                          <h1>{slide.title}</h1>
+                          <p>{slide.description}</p>
+                          <div className="hero-actions hero-buttons">
+                            <Button to="/services">
+                              Explore Services
+                              <ArrowRight size={18} />
+                            </Button>
+                            <Button to="/contact" variant="secondary">
+                              Contact Us
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="hero-slide-spacer" aria-hidden="true" />
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="hero-slider-dots slider-dots" aria-label="Hero slide navigation">
+              {slides.map((slide, index) => (
+                <button
                   key={slide.title}
-                  className={`hero-slide ${isActive ? "hero-slide-active" : ""}`}
-                  style={{ "--hero-image": `url(${slide.image})` }}
-                  aria-hidden={!isActive}
-                >
-                  <div className="hero-slide-copy homepage-hero-copy">
-                    {isActive && (
-                      <>
-                        <span className="section-eyebrow">{slide.tag}</span>
-                        <h1>{slide.title}</h1>
-                        <p>{slide.description}</p>
-                        <div className="hero-actions">
-                          <Button to="/services">
-                            Explore Services
-                            <ArrowRight size={18} />
-                          </Button>
-                          <Button to="/contact" variant="secondary">
-                            Contact Us
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="hero-slide-spacer" aria-hidden="true" />
-                  <div className="hero-slide-overlay" />
-                </article>
-              );
-            })}
-          </div>
-
-          <div className="hero-slider-dots" aria-label="Hero slide navigation">
-            {slides.map((slide, index) => (
-              <button
-                key={slide.title}
-                type="button"
-                className={`hero-slider-dot ${index === activeSlide ? "hero-slider-dot-active" : ""}`}
-                onClick={() => setActiveSlide(index)}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
+                  type="button"
+                  className={`hero-slider-dot ${index === activeSlide ? "hero-slider-dot-active" : ""}`}
+                  onClick={() => setActiveSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -213,7 +266,7 @@ const Dashboard = () => {
             return (
               <article
                 key={service.title}
-                className="enterprise-service-card reveal is-visible"
+                className="enterprise-service-card reveal"
                 style={{ transitionDelay: `${index * 70}ms` }}
               >
                 <div className="feature-icon">
@@ -233,7 +286,7 @@ const Dashboard = () => {
         title="Why companies work with us."
         description="We combine consulting discipline, engineering depth, and delivery accountability to help organizations modernize technology without unnecessary complexity."
       >
-        <div className="homepage-why-layout">
+        <div className="homepage-why-layout service-section">
           <div className="homepage-why-copy">
             <p className="homepage-why-intro">
               Our teams support modernization programs across software platforms,
@@ -244,7 +297,7 @@ const Dashboard = () => {
               {strengths.map((item, index) => (
                 <article
                   key={item.title}
-                  className="homepage-why-item reveal is-visible"
+                  className="homepage-why-item reveal"
                   style={{ transitionDelay: `${index * 70}ms` }}
                 >
                   <CheckCircle2 size={20} />
@@ -260,13 +313,12 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="homepage-why-media">
+          <div className="homepage-why-media service-image-card">
             <img
-              src="https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=3840&q=90"
-              alt="Consulting team collaborating around enterprise planning dashboards"
+              src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=2400&q=90"
+              alt="Enterprise office with modern technology workstations"
               loading="lazy"
             />
-            <div className="homepage-why-overlay" />
           </div>
         </div>
       </SectionWrapper>

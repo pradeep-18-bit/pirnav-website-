@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const container = document.getElementById("particles-bg");
+  const container = document.getElementById("particles-js");
 
   if (!container || !window.tsParticles) {
     return;
@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  window.tsParticles.load("particles-bg", {
+  window.tsParticles.load("particles-js", {
     fullScreen: {
       enable: false,
     },

@@ -11,7 +11,7 @@ const PublicServices = () => {
         className="page-banner page-banner-centered page-banner-light"
         style={{
           "--banner-image":
-            "url('https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=3840&q=90')",
+            "url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2400&q=85')",
         }}
       >
         <div className="section-shell page-banner-content">

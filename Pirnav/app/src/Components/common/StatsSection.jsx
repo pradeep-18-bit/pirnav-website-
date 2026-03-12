@@ -8,11 +8,11 @@ const StatsSection = ({ items, className = "" }) => {
       <div ref={ref} className="section-shell reveal">
         <div className="stats-grid">
           {items.map((item, index) => (
-            <article
-              key={item.label}
-              className="stat-card"
-              style={{ transitionDelay: `${index * 70}ms` }}
-            >
+              <article
+                key={item.label}
+                className="stat-card reveal"
+                style={{ transitionDelay: `${index * 70}ms` }}
+              >
               <h2>{item.value}</h2>
               <p>{item.label}</p>
             </article>

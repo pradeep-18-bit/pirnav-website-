@@ -42,7 +42,7 @@ const baseServiceItems = [
     title: "Application Development",
     icon: Rocket,
     image:
-      "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=2400&q=85",
     summary:
       "Custom product and platform engineering for enterprise workflows and customer-facing systems.",
     intro:
@@ -64,7 +64,7 @@ const baseServiceItems = [
     title: "Testing / Automation",
     icon: ShieldCheck,
     image:
-      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=2400&q=85",
     summary:
       "Quality engineering that embeds automation into every release pipeline.",
     intro:
@@ -86,7 +86,7 @@ const baseServiceItems = [
     title: "Maintenance & Support",
     icon: Settings,
     image:
-      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2400&q=85",
     summary:
       "Ongoing support and optimization programs for critical applications and integrations.",
     intro:
@@ -104,7 +104,7 @@ const baseServiceItems = [
     title: "Web Development",
     icon: Monitor,
     image:
-      "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=2400&q=85",
     summary:
       "Responsive web products designed for performance, usability, and enterprise integration.",
     intro:
@@ -122,7 +122,7 @@ const baseServiceItems = [
     title: "Mobile App Development",
     icon: Smartphone,
     image:
-      "https://images.unsplash.com/photo-1522542550221-31fd19575a2d?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1522542550221-31fd19575a2d?auto=format&fit=crop&w=2400&q=85",
     summary:
       "Mobile products that connect users, operations, and backend platforms seamlessly.",
     intro:
@@ -140,7 +140,7 @@ const baseServiceItems = [
     title: "SAP Solutions",
     icon: Database,
     image:
-      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=2400&q=85",
     summary:
       "SAP implementation, customization, and support services for enterprise operations.",
     intro:
@@ -158,7 +158,7 @@ const baseServiceItems = [
     title: "Oracle Solutions",
     icon: Server,
     image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=2400&q=85",
     summary:
       "Oracle services spanning database platforms, enterprise applications, and modernization work.",
     intro:
@@ -176,7 +176,7 @@ const baseServiceItems = [
     title: "Microsoft Solutions",
     icon: Cloud,
     image:
-      "https://images.unsplash.com/photo-1534723452862-4c874018d66d?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=2400&q=85",
     summary:
       "Microsoft ecosystem delivery for cloud, collaboration, productivity, and operations.",
     intro:
@@ -194,7 +194,7 @@ const baseServiceItems = [
     title: "Professional Services",
     icon: Briefcase,
     image:
-      "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=3840&q=90",
+      "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=2400&q=85",
     summary:
       "Technology consulting and staffing models structured around business delivery needs.",
     intro:
@@ -446,6 +446,12 @@ export const aboutPillars = [
     title: "Experienced teams",
     description: "Delivery talent that blends technical competence with professional accountability.",
     icon: Users,
+  },
+  {
+    title: "Cloud & Platform Expertise",
+    description:
+      "Deep experience designing scalable cloud architectures and modern platforms for enterprise applications.",
+    icon: Cloud,
   },
 ];
 

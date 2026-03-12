@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -37,6 +38,60 @@ import ProfessionalPage from "./Components/Services/ProfessionalPage.jsx";
 function AppContent() {
   const location = useLocation();
   const hideLayout = location.pathname.startsWith("/admin");
+
+  useEffect(() => {
+    const selector = [
+      ".reveal",
+      ".stat-card",
+      ".service-box",
+      ".card",
+      ".tile",
+      ".executive-grid > div",
+      ".story-card",
+      ".career-card",
+      ".job-card-modern",
+      ".contact-card",
+      ".contact-form-card",
+      ".job-detail-card",
+      ".service-outline-card",
+      ".enterprise-service-card",
+      ".homepage-why-item",
+      ".feature-card",
+      ".testimonial-card",
+      ".service-card-modern",
+      ".service-card-link",
+      ".technology-card",
+      ".enterprise-careers-panel",
+      ".cta-panel",
+      ".map-frame",
+      ".hero-metric",
+    ].join(", ");
+
+    const elements = document.querySelectorAll(selector);
+
+    elements.forEach((element) => element.classList.add("reveal"));
+
+    if (!("IntersectionObserver" in window)) {
+      elements.forEach((element) => element.classList.add("active"));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("active", "visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, [location.pathname]);
 
   return (
     <>
