@@ -27,7 +27,6 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       const navbar = document.querySelector(".navbar");
-
       if (!navbar) return;
 
       if (window.scrollY > 40) {
@@ -48,19 +47,24 @@ const Navbar = () => {
   return (
     <header className="site-header">
       <nav className="navbar" aria-label="Primary navigation">
-        <div className="container navbar-inner">
+
+        {/* NEW CONTAINER */}
+        <div className="navbar-inner">
+
           <div className="nav-left">
-            <Link to="/" className="logo-link" onClick={closeMobileMenu} aria-label="Pirnav home">
+            <Link to="/" className="logo-link" onClick={closeMobileMenu}>
               <img src="/images/logo.png" alt="Pirnav Logo" className="logo" />
             </Link>
           </div>
 
-          <ul className="nav-menu nav-links">
+          <ul className="nav-menu">
             {navLinks.map((link) => (
               <li key={link.to}>
                 <NavLink
                   to={link.to}
-                  className={({ isActive }) => `nav-link${isActive ? " active-link" : ""}`}
+                  className={({ isActive }) =>
+                    `nav-link${isActive ? " active-link" : ""}`
+                  }
                 >
                   {link.label}
                 </NavLink>
@@ -77,24 +81,25 @@ const Navbar = () => {
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
+
         </div>
       </nav>
 
       <div className={`mobile-nav-panel ${mobileOpen ? "mobile-nav-panel-open" : ""}`}>
-        <div className="container">
-          <nav className="nav-mobile-links" aria-label="Mobile navigation">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) => `nav-link${isActive ? " active-link" : ""}`}
-                onClick={closeMobileMenu}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </nav>
-        </div>
+        <nav className="nav-mobile-links">
+          {navLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) =>
+                `nav-link${isActive ? " active-link" : ""}`
+              }
+              onClick={closeMobileMenu}
+            >
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
       </div>
     </header>
   );
