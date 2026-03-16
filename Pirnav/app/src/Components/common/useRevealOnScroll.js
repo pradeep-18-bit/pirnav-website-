@@ -13,7 +13,8 @@ const useRevealOnScroll = () => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("is-visible", "active", "visible");
-            observer.unobserve(entry.target);
+          } else {
+            entry.target.classList.remove("is-visible", "active", "visible");
           }
         });
       },
