@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-
-// Use relative paths so Docker/nginx routing works across environments.
-const BASE_URL = "/api";
+import { getErrorMessage } from "../../services/apiClient";
+import { submitJobApplication } from "../../services/applicationsService";
+import { getPublicJobById } from "../../services/jobsService";
 
 const initialForm = {
   fullName: "",
@@ -24,6 +24,7 @@ const initialForm = {
 const JobDetails = () => {
   const { id } = useParams();
   const [job, setJob] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -32,13 +33,13 @@ const JobDetails = () => {
   useEffect(() => {
     const fetchJob = async () => {
       try {
-        const response = await fetch(`${BASE_URL}/Jobs/public/${id}`, {
-          headers: { "ngrok-skip-browser-warning": "true" },
-        });
-        const data = await response.json();
+        setErrorMessage("");
+        const data = await getPublicJobById(id);
         setJob(data);
-      } catch (error) {
-        console.error(error);
+      } catch (requestError) {
+        setErrorMessage(getErrorMessage(requestError, "Unable to load this role."));
+      } finally {
+        setPageLoading(false);
       }
     };
 
@@ -108,29 +109,27 @@ const JobDetails = () => {
     form.append("Resume", formData.resume);
 
     try {
-      const response = await fetch(`${BASE_URL}/JobApplications`, {
-        method: "POST",
-        headers: { "ngrok-skip-browser-warning": "true" },
-        body: form,
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Application submission failed");
-      }
-
+      await submitJobApplication(form);
       setSuccessMessage("Application submitted successfully.");
       setFormData(initialForm);
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error) {
-      setErrorMessage(error.message);
+    } catch (requestError) {
+      setErrorMessage(getErrorMessage(requestError, "Application submission failed"));
     } finally {
       setLoading(false);
     }
   };
 
-  if (!job) {
+  if (pageLoading) {
     return <div className="page-shell section-shell" style={{ paddingTop: "160px" }}>Loading...</div>;
+  }
+
+  if (!job) {
+    return (
+      <div className="page-shell section-shell" style={{ paddingTop: "160px" }}>
+        {errorMessage || "This role could not be found."}
+      </div>
+    );
   }
 
   return (

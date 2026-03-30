@@ -1,10 +1,8 @@
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { CheckCircle2, Search } from "lucide-react";
 import "./Admin.css";
-import {
-  applicationStatusLabels,
-} from "./applicationStatus";
-import { useAdminApplications } from "./applicationsContext";
+import { applicationStatusLabels } from "../../services/applicationStatus";
+import { useAdminApplications } from "../../hooks/useAdminApplications";
 
 const formatSelectedDate = (value) => {
   if (!value) {
@@ -24,9 +22,10 @@ const formatSelectedDate = (value) => {
 const SelectedCandidates = () => {
   const { loading, selectedCandidates } = useAdminApplications();
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
 
   const filteredCandidates = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = deferredSearch.trim().toLowerCase();
     const sortedCandidates = [...selectedCandidates].sort((candidateA, candidateB) => {
       const dateA = Date.parse(candidateA.selectedDate || "") || 0;
       const dateB = Date.parse(candidateB.selectedDate || "") || 0;
@@ -42,7 +41,7 @@ const SelectedCandidates = () => {
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(query))
     );
-  }, [search, selectedCandidates]);
+  }, [deferredSearch, selectedCandidates]);
 
   return (
     <div className="applications-wrapper selected-candidates-wrapper">

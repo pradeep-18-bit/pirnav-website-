@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import {
   Bookmark,
   CheckCircle2,
@@ -11,8 +11,8 @@ import {
   applicationStatusLabels,
   applicationStatusOptions,
   normalizeApplicationStatus,
-} from "./applicationStatus";
-import { useAdminApplications } from "./applicationsContext";
+} from "../../services/applicationStatus";
+import { useAdminApplications } from "../../hooks/useAdminApplications";
 import CandidateDetailsModal from "./CandidateDetailsModal";
 
 const pipelineColumnConfig = {
@@ -68,9 +68,10 @@ const Pipeline = () => {
   const [dragOverStatus, setDragOverStatus] = useState("");
   const [feedback, setFeedback] = useState({ type: "", text: "" });
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+  const deferredSearch = useDeferredValue(search);
 
   const filteredApplications = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = deferredSearch.trim().toLowerCase();
 
     if (!query) {
       return applications;
@@ -81,7 +82,7 @@ const Pipeline = () => {
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(query))
     );
-  }, [applications, search]);
+  }, [applications, deferredSearch]);
 
   const groupedCandidates = useMemo(() => {
     const grouped = applicationStatusOptions.reduce((groups, status) => {

@@ -1,39 +1,82 @@
-import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
-import { clearAdminToken, getAdminHeaders, getAdminToken } from "./adminAuth";
+import { clearAdminToken, getAdminHeaders, getAdminToken } from "../../services/adminAuth";
+import { getErrorMessage, isUnauthorizedError } from "../../services/apiClient";
+import {
+  createJob,
+  deleteJob,
+  getAdminJobs,
+  updateJob,
+} from "../../services/jobsService";
+import JobEditorModal from "./JobEditorModal";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
-const API_BASE =
-  "/api/Jobs";
+const initialForm = {
+  jobTitle: "",
+  workLocation: "",
+  jobType: "full-time",
+  status: "open",
+  experience: "",
+  ctc: "",
+  highestQualification: "",
+  jobDescription: "",
+  mandatorySkills: "",
+};
 
 const AdminJobs = () => {
   const navigate = useNavigate();
   const token = getAdminToken();
-
   const [jobs, setJobs] = useState([]);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [editingJob, setEditingJob] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
   const [openId, setOpenId] = useState(null);
+  const [form, setForm] = useState(initialForm);
+  const deferredSearch = useDeferredValue(search);
 
-  const [form, setForm] = useState({
-    jobTitle: "",
-    workLocation: "",
-    jobType: "full-time",
-    status: "open",
-    experience: "",
-    ctc: "",
-    highestQualification: "",
-    jobDescription: "",
-    mandatorySkills: "",
-  });
+  const handleUnauthorized = useCallback(() => {
+    clearAdminToken();
+    navigate("/admin-login", { replace: true });
+  }, [navigate]);
 
-  const getHeaders = () => {
-    return getAdminHeaders(token);
-  };
+  const getHeaders = useCallback(() => {
+    const headers = getAdminHeaders(token);
+
+    if (!headers) {
+      navigate("/admin-login", { replace: true });
+      return null;
+    }
+
+    return headers;
+  }, [navigate, token]);
+
+  const fetchJobs = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const headers = getHeaders();
+      if (!headers) return;
+
+      const data = await getAdminJobs(headers);
+      setJobs(data);
+    } catch (requestError) {
+      if (isUnauthorizedError(requestError)) {
+        handleUnauthorized();
+        return;
+      }
+
+      setError(getErrorMessage(requestError, "Failed to fetch jobs."));
+    } finally {
+      setLoading(false);
+    }
+  }, [getHeaders, handleUnauthorized]);
 
   useEffect(() => {
     if (!token) {
@@ -42,108 +85,82 @@ const AdminJobs = () => {
     }
 
     fetchJobs();
-  }, [navigate, token]);
+  }, [fetchJobs, navigate, token]);
 
-  const fetchJobs = async () => {
-    try {
-      setLoading(true);
-      const headers = getHeaders();
-      if (!headers) return;
-
-      const res = await fetch(API_BASE, { headers });
-      if (res.status === 401) {
-        clearAdminToken();
-        navigate("/admin-login", { replace: true });
-        return;
-      }
-      if (!res.ok) throw new Error("Failed to fetch jobs");
-
-      const data = await res.json();
-      setJobs(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+  const handleFormChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
     try {
+      setSaving(true);
+      setError("");
       const headers = getHeaders();
       if (!headers) return;
 
-      const method = editingJob ? "PUT" : "POST";
-      const url = editingJob
-        ? `${API_BASE}/${editingJob.id}`
-        : API_BASE;
-
-      const res = await fetch(url, {
-        method,
-        headers,
-        body: JSON.stringify(form),
-      });
-
-      if (res.status === 401) {
-        clearAdminToken();
-        navigate("/admin-login", { replace: true });
-        return;
-      }
-
-      if (!res.ok) {
-        alert("Operation failed");
-        return;
+      if (editingJob) {
+        await updateJob({
+          jobId: editingJob.id,
+          job: form,
+          headers,
+        });
+      } else {
+        await createJob({
+          job: form,
+          headers,
+        });
       }
 
       setShowModal(false);
       setEditingJob(null);
-      fetchJobs();
-    } catch (error) {
-      console.error(error);
+      setForm(initialForm);
+      await fetchJobs();
+    } catch (requestError) {
+      if (isUnauthorizedError(requestError)) {
+        handleUnauthorized();
+        return;
+      }
+
+      setError(getErrorMessage(requestError, "Operation failed."));
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
+    if (!editingJob) {
+      return;
+    }
+
     try {
+      setDeleting(true);
+      setError("");
       const headers = getHeaders();
       if (!headers) return;
 
-      const res = await fetch(`${API_BASE}/${editingJob.id}`, {
-        method: "DELETE",
+      await deleteJob({
+        jobId: editingJob.id,
         headers,
       });
 
-      if (res.status === 401) {
-        clearAdminToken();
-        navigate("/admin-login", { replace: true });
-        return;
-      }
-
-      if (!res.ok) {
-        alert("Delete failed");
-        return;
-      }
-
       setDeleteModal(false);
       setEditingJob(null);
-      fetchJobs();
-    } catch (error) {
-      console.error(error);
+      await fetchJobs();
+    } catch (requestError) {
+      if (isUnauthorizedError(requestError)) {
+        handleUnauthorized();
+        return;
+      }
+
+      setError(getErrorMessage(requestError, "Delete failed."));
+    } finally {
+      setDeleting(false);
     }
   };
 
   const openCreate = () => {
     setEditingJob(null);
-    setForm({
-      jobTitle: "",
-      workLocation: "",
-      jobType: "full-time",
-      status: "open",
-      experience: "",
-      ctc: "",
-      highestQualification: "",
-      jobDescription: "",
-      mandatorySkills: "",
-    });
+    setForm(initialForm);
     setShowModal(true);
   };
 
@@ -163,9 +180,19 @@ const AdminJobs = () => {
     setShowModal(true);
   };
 
-  const filteredJobs = jobs.filter((job) =>
-    job.jobTitle?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredJobs = useMemo(() => {
+    const query = deferredSearch.trim().toLowerCase();
+
+    if (!query) {
+      return jobs;
+    }
+
+    return jobs.filter((job) =>
+      [job.jobTitle, job.workLocation, job.mandatorySkills, job.jobDescription]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
+    );
+  }, [deferredSearch, jobs]);
 
   return (
     <div className="jobs-wrapper">
@@ -181,10 +208,11 @@ const AdminJobs = () => {
         <input
           placeholder="Search jobs..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(event) => setSearch(event.target.value)}
         />
       </div>
 
+      {error && <div className="pipeline-feedback is-error">{error}</div>}
       {loading && <p>Loading...</p>}
 
       <div className="jobs-accordion">
@@ -194,19 +222,16 @@ const AdminJobs = () => {
               <div>
                 <h3>{job.jobTitle}</h3>
                 <p>
-                  {job.workLocation} | {job.jobType} | Experience:{" "}
-                  {job.experience}
+                  {job.workLocation} | {job.jobType} | Experience: {job.experience}
                 </p>
               </div>
 
               <div className="job-actions-admin">
                 <button
                   className="expand-btn"
-                  onClick={() =>
-                    setOpenId(openId === job.id ? null : job.id)
-                  }
+                  onClick={() => setOpenId(openId === job.id ? null : job.id)}
                 >
-                  {openId === job.id ? "−" : "+"}
+                  {openId === job.id ? "-" : "+"}
                 </button>
 
                 <button onClick={() => openEdit(job)}>
@@ -224,15 +249,17 @@ const AdminJobs = () => {
               </div>
             </div>
 
-            <div
-              className={`job-expand-section ${
-                openId === job.id ? "active" : ""
-              }`}
-            >
+            <div className={`job-expand-section ${openId === job.id ? "active" : ""}`}>
               <div className="expand-content">
-                <p><strong>CTC:</strong> {job.ctc}</p>
-                <p><strong>Status:</strong> {job.status}</p>
-                <p><strong>Highest Qualification:</strong> {job.highestQualification}</p>
+                <p>
+                  <strong>CTC:</strong> {job.ctc}
+                </p>
+                <p>
+                  <strong>Status:</strong> {job.status}
+                </p>
+                <p>
+                  <strong>Highest Qualification:</strong> {job.highestQualification}
+                </p>
 
                 <h4>Job Description</h4>
                 <p>{job.jobDescription}</p>
@@ -245,122 +272,25 @@ const AdminJobs = () => {
         ))}
       </div>
 
-      {/* CREATE / EDIT MODAL */}
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal large">
-            <h3>{editingJob ? "Edit Job" : "Post New Job"}</h3>
-
-            <input
-              placeholder="Job Title"
-              value={form.jobTitle}
-              onChange={(e) =>
-                setForm({ ...form, jobTitle: e.target.value })
-              }
-            />
-
-            <input
-              placeholder="Work Location"
-              value={form.workLocation}
-              onChange={(e) =>
-                setForm({ ...form, workLocation: e.target.value })
-              }
-            />
-
-            <select
-              value={form.jobType}
-              onChange={(e) =>
-                setForm({ ...form, jobType: e.target.value })
-              }
-            >
-              <option value="full-time">Full-time</option>
-              <option value="part-time">Part-time</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="remote">Remote</option>
-            </select>
-
-            <select
-              value={form.status}
-              onChange={(e) =>
-                setForm({ ...form, status: e.target.value })
-              }
-            >
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-            </select>
-
-            <input
-              placeholder="Experience"
-              value={form.experience}
-              onChange={(e) =>
-                setForm({ ...form, experience: e.target.value })
-              }
-            />
-
-            <input
-              placeholder="CTC"
-              value={form.ctc}
-              onChange={(e) =>
-                setForm({ ...form, ctc: e.target.value })
-              }
-            />
-
-            <input
-              placeholder="Highest Qualification"
-              value={form.highestQualification}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  highestQualification: e.target.value,
-                })
-              }
-            />
-
-            <textarea
-              placeholder="Job Description"
-              value={form.jobDescription}
-              onChange={(e) =>
-                setForm({ ...form, jobDescription: e.target.value })
-              }
-            />
-
-            <textarea
-              placeholder="Mandatory Skills"
-              value={form.mandatorySkills}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  mandatorySkills: e.target.value,
-                })
-              }
-            />
-
-            <div className="modal-actions">
-              <button onClick={() => setShowModal(false)}>Cancel</button>
-              <button onClick={handleSave} className="save-btn">
-                {editingJob ? "Update" : "Create"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <JobEditorModal
+          editingJob={editingJob}
+          form={form}
+          onChange={handleFormChange}
+          onCancel={() => setShowModal(false)}
+          onSave={handleSave}
+          saving={saving}
+        />
       )}
 
-      {/* DELETE MODAL */}
-      {deleteModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h3>Delete Job</h3>
-            <p>Are you sure you want to delete this job?</p>
-            <div className="modal-actions">
-              <button onClick={() => setDeleteModal(false)}>
-                Cancel
-              </button>
-              <button onClick={handleDelete} className="delete-btn">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
+      {deleteModal && editingJob && (
+        <ConfirmDeleteModal
+          title="Delete Job"
+          description={`Are you sure you want to delete ${editingJob.jobTitle}?`}
+          onCancel={() => setDeleteModal(false)}
+          onConfirm={handleDelete}
+          deleting={deleting}
+        />
       )}
     </div>
   );

@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BriefcaseBusiness, GraduationCap, Search } from "lucide-react";
 import SectionWrapper from "../../components/common/SectionWrapper";
 import FeatureCard from "../../components/common/FeatureCard";
 import { whyJoinUs } from "../../data/siteContent";
+import { getErrorMessage } from "../../services/apiClient";
+import { getPublicJobs } from "../../services/jobsService";
 import "./Careers.css";
-
-// Use relative paths so Docker/nginx routing works across environments.
-const BASE_URL = "/api";
 const JOB_PREVIEW_FALLBACK =
   "Join a collaborative team building reliable software, modern platforms, and high-impact solutions for growing businesses.";
 
@@ -36,26 +35,20 @@ const getJobPreview = (description) => {
 const Careers = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await fetch(`${BASE_URL}/Jobs/public`, {
-          headers: { "ngrok-skip-browser-warning": "true" },
-        });
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-          setJobs(data);
-        } else if (data.$values) {
-          setJobs(data.$values);
-        } else {
-          setJobs([]);
-        }
-      } catch (error) {
-        console.error(error);
+        setError("");
+        const data = await getPublicJobs();
+        setJobs(data);
+      } catch (requestError) {
+        setError(getErrorMessage(requestError, "Unable to load open roles."));
+        setJobs([]);
       } finally {
         setLoading(false);
       }
@@ -64,7 +57,7 @@ const Careers = () => {
     fetchJobs();
   }, []);
 
-  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const normalizedSearch = deferredSearchTerm.trim().toLowerCase();
   const filteredJobs = jobs.filter((job) => {
     if (!normalizedSearch) return true;
 
@@ -160,15 +153,21 @@ const Careers = () => {
         </div>
 
         <div className="jobs-stack careers-jobs-stack">
+          {error && (
+            <article className="job-card-modern careers-job-card careers-jobs-empty">
+              {error}
+            </article>
+          )}
+
           {loading && <article className="job-card-modern careers-job-card">Loading jobs...</article>}
 
-          {!loading && jobs.length === 0 && (
+          {!loading && !error && jobs.length === 0 && (
             <article className="job-card-modern careers-job-card careers-jobs-empty">
               No openings available right now.
             </article>
           )}
 
-          {!loading && jobs.length > 0 && filteredJobs.length === 0 && (
+          {!loading && !error && jobs.length > 0 && filteredJobs.length === 0 && (
             <article className="job-card-modern careers-job-card careers-jobs-empty">
               No roles match "{searchTerm}".
             </article>

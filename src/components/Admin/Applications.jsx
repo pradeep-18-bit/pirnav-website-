@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import {
   Bookmark,
   CheckCircle2,
@@ -8,8 +8,11 @@ import {
   XCircle,
 } from "lucide-react";
 import "./Admin.css";
-import { applicationStatusLabels, applicationStatusOptions } from "./applicationStatus";
-import { useAdminApplications } from "./applicationsContext";
+import {
+  applicationStatusLabels,
+  applicationStatusOptions,
+} from "../../services/applicationStatus";
+import { useAdminApplications } from "../../hooks/useAdminApplications";
 import CandidateDetailsModal from "./CandidateDetailsModal";
 
 const statusConfig = {
@@ -37,11 +40,12 @@ const Applications = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+  const deferredSearch = useDeferredValue(search);
 
   const filteredApplications = useMemo(
     () =>
       applications.filter((application) => {
-        const query = search.toLowerCase();
+        const query = deferredSearch.toLowerCase();
         const matchesSearch =
           application.name?.toLowerCase().includes(query) ||
           application.email?.toLowerCase().includes(query) ||
@@ -50,7 +54,7 @@ const Applications = () => {
 
         return matchesSearch && matchesFilter;
       }),
-    [applications, filter, search]
+    [applications, deferredSearch, filter]
   );
 
   return (

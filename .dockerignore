@@ -1,3 +1,7 @@
-node_modules
+**/node_modules
+**/dist
 .git
 .vs
+*.zip
+Pirnav
+package-lock.codex-backup.json

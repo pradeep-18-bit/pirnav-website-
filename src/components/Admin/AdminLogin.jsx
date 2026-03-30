@@ -1,12 +1,10 @@
-// src/Components/Admin/AdminLogin.jsx
 import { useEffect, useState } from "react";
 import { Lock, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
-import { getAdminToken, saveAdminToken } from "./adminAuth";
-
-const API_BASE =
-  "/api/Admin/login";
+import { getAdminToken, saveAdminToken } from "../../services/adminAuth";
+import { getErrorMessage } from "../../services/apiClient";
+import { loginAdmin } from "../../services/adminService";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -40,31 +38,16 @@ const AdminLogin = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
     setErrors({});
 
     try {
-      const response = await fetch(API_BASE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErrors({ api: data.message || "Invalid credentials" });
-        setLoading(false);
-        return;
-      }
-
-      const token = data?.token ?? data?.data?.token;
+      const data = await loginAdmin({ email, password });
+      const token = data?.token;
 
       if (!token) {
         setErrors({ api: "Login succeeded, but no auth token was returned." });
@@ -72,15 +55,9 @@ const AdminLogin = () => {
       }
 
       saveAdminToken(token);
-      console.log("[AdminLogin] adminToken saved after login:", {
-        present: true,
-        preview: `${token.slice(0, 12)}...`,
-      });
-
       navigate("/admin", { replace: true });
-
-    } catch {
-      setErrors({ api: "Server not reachable." });
+    } catch (error) {
+      setErrors({ api: getErrorMessage(error, "Server not reachable.") });
     } finally {
       setLoading(false);
     }
@@ -107,7 +84,7 @@ const AdminLogin = () => {
                 className="form-input"
                 placeholder=" "
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 autoComplete="username"
               />
               <label htmlFor="admin-email" className="form-label">
@@ -128,7 +105,7 @@ const AdminLogin = () => {
                 className="form-input"
                 placeholder=" "
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
               />
               <label htmlFor="admin-password" className="form-label">

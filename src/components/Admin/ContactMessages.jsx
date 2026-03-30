@@ -1,388 +1,259 @@
-// src/Components/Admin/ContactMessages.jsx
- 
-import { useState, useEffect } from "react";
-
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-import { Search, Eye, Trash2, Clock } from "lucide-react";
-
+import { Eye, Search, Trash2, Clock } from "lucide-react";
 import "./Admin.css";
-import { clearAdminToken, getAdminHeaders, getAdminToken } from "./adminAuth";
- 
-const API_BASE =
-  "/api/Contact";
- 
+import { clearAdminToken, getAdminHeaders, getAdminToken } from "../../services/adminAuth";
+import {
+  deleteContactMessage,
+  getContactMessage,
+  getContactMessages,
+  getUnreadContactCount,
+  markContactMessageRead,
+} from "../../services/contactService";
+import { getErrorMessage, isUnauthorizedError } from "../../services/apiClient";
+
 const ContactMessages = () => {
-
-  const [messages, setMessages] = useState([]);
-
-  const [search, setSearch] = useState("");
-
-  const [selected, setSelected] = useState(null);
-
-  const [deleteMsg, setDeleteMsg] = useState(null);
-
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const [loading, setLoading] = useState(false);
- 
   const navigate = useNavigate();
   const token = getAdminToken();
- 
-  const getHeaders = () => {
-    return getAdminHeaders(token);
+  const [messages, setMessages] = useState([]);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState(null);
+  const [deleteMsg, setDeleteMsg] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const deferredSearch = useDeferredValue(search);
 
-  };
- 
+  const handleUnauthorized = useCallback(() => {
+    clearAdminToken();
+    navigate("/admin-login", { replace: true });
+  }, [navigate]);
+
+  const getHeaders = useCallback(() => {
+    const headers = getAdminHeaders(token);
+
+    if (!headers) {
+      navigate("/admin-login", { replace: true });
+      return null;
+    }
+
+    return headers;
+  }, [navigate, token]);
+
+  const loadMessages = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const headers = getHeaders();
+      if (!headers) {
+        return;
+      }
+
+      const [messageList, unread] = await Promise.all([
+        getContactMessages(headers),
+        getUnreadContactCount(headers),
+      ]);
+
+      setMessages(messageList);
+      setUnreadCount(unread);
+    } catch (requestError) {
+      if (isUnauthorizedError(requestError)) {
+        handleUnauthorized();
+        return;
+      }
+
+      setError(getErrorMessage(requestError, "Unable to load messages."));
+    } finally {
+      setLoading(false);
+    }
+  }, [getHeaders, handleUnauthorized]);
+
   useEffect(() => {
     if (!token) {
       navigate("/admin-login", { replace: true });
       return;
     }
 
-    fetchMessages();
+    loadMessages();
+  }, [loadMessages, navigate, token]);
 
-    fetchUnreadCount();
-
-  }, [navigate, token]);
- 
-  // ===============================
-
-  // GET ALL
-
-  // ===============================
-
-  const fetchMessages = async () => {
-
+  const openMessage = async (messageId) => {
     try {
-
-      setLoading(true);
- 
+      setError("");
       const headers = getHeaders();
-
-      if (!headers) return;
- 
-      const res = await fetch(API_BASE, { headers });
-
-      if (res.status === 401) {
-        clearAdminToken();
-        navigate("/admin-login", { replace: true });
+      if (!headers) {
         return;
       }
 
-      const data = await res.json();
- 
-      setMessages(Array.isArray(data) ? data : []);
+      const message = await getContactMessage({ messageId, headers });
+      setSelected(message);
 
-    } catch (err) {
-
-      console.error("Load error", err);
-
-    } finally {
-
-      setLoading(false);
-
-    }
-
-  };
- 
-  // ===============================
-
-  // GET UNREAD COUNT
-
-  // ===============================
-
-  const fetchUnreadCount = async () => {
-
-    try {
-
-      const headers = getHeaders();
-
-      if (!headers) return;
- 
-      const res = await fetch(`${API_BASE}/unread-count`, {
-
-        headers,
-
-      });
-
-      if (res.status === 401) {
-        clearAdminToken();
-        navigate("/admin-login", { replace: true });
+      if (message.status === "Unread") {
+        await markContactMessageRead({ messageId, headers });
+        setMessages((prev) =>
+          prev.map((record) =>
+            String(record.id) === String(messageId)
+              ? { ...record, status: "Read" }
+              : record
+          )
+        );
+        setSelected((prev) => (prev ? { ...prev, status: "Read" } : prev));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (requestError) {
+      if (isUnauthorizedError(requestError)) {
+        handleUnauthorized();
         return;
       }
- 
-      if (!res.ok) return;
- 
-      const data = await res.json();
- 
-      // Backend returns: { unread: number }
 
-      setUnreadCount(data?.unread ?? 0);
-
-    } catch (err) {
-
-      console.error("Unread count error:", err);
-
+      setError(getErrorMessage(requestError, "Unable to open message."));
     }
-
   };
- 
-  // ===============================
-
-  // 👁 VIEW + MARK READ
-
-  // ===============================
-
-  const openMessage = async (id) => {
-
-    try {
-
-      const headers = getHeaders();
-
-      if (!headers) return;
- 
-      const res = await fetch(`${API_BASE}/${id}`, {
-
-        headers,
-
-      });
-
-      if (res.status === 401) {
-        clearAdminToken();
-        navigate("/admin-login", { replace: true });
-        return;
-      }
- 
-      const data = await res.json();
-
-      setSelected(data);
- 
-      if (data.status === "Unread") {
-
-      const markReadResponse = await fetch(`${API_BASE}/mark-read/${id}`, {
-
-          method: "PUT",
-
-          headers,
-
-        });
-
-        if (markReadResponse.status === 401) {
-          clearAdminToken();
-          navigate("/admin-login", { replace: true });
-          return;
-        }
- 
-        await fetchMessages();
-
-        await fetchUnreadCount();
-
-      }
-
-    } catch (err) {
-
-      console.error("Open error", err);
-
-    }
-
-  };
- 
-  // ===============================
-
-  // DELETE
-
-  // ===============================
 
   const handleDelete = async () => {
-
     try {
-
       const headers = getHeaders();
-
-      if (!headers) return;
- 
-      const response = await fetch(`${API_BASE}/${deleteMsg.id}`, {
-
-        method: "DELETE",
-
-        headers,
-
-      });
-
-      if (response.status === 401) {
-        clearAdminToken();
-        navigate("/admin-login", { replace: true });
+      if (!headers || !deleteMsg) {
         return;
       }
- 
-      await fetchMessages();
 
-      await fetchUnreadCount();
- 
+      await deleteContactMessage({
+        messageId: deleteMsg.id,
+        headers,
+      });
+
+      setMessages((prev) =>
+        prev.filter((message) => String(message.id) !== String(deleteMsg.id))
+      );
+      if (deleteMsg.status !== "Read") {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
       setDeleteMsg(null);
+    } catch (requestError) {
+      if (isUnauthorizedError(requestError)) {
+        handleUnauthorized();
+        return;
+      }
 
-    } catch (err) {
+      setError(getErrorMessage(requestError, "Unable to delete message."));
+    }
+  };
 
-      console.error("Delete error", err);
+  const filteredMessages = useMemo(() => {
+    const query = deferredSearch.trim().toLowerCase();
 
+    if (!query) {
+      return messages;
     }
 
-  };
- 
-  const filtered = messages.filter(
+    return messages.filter((message) =>
+      [message.name, message.email, message.subject]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
+    );
+  }, [deferredSearch, messages]);
 
-    (m) =>
-
-      m.name?.toLowerCase().includes(search.toLowerCase()) ||
-
-      m.email?.toLowerCase().includes(search.toLowerCase()) ||
-
-      m.subject?.toLowerCase().includes(search.toLowerCase())
-
-  );
- 
   return (
-<div className="messages-wrapper">
-<div className="messages-header">
-<h1>Contact Messages</h1>
-<span className="unread-badge">
+    <div className="messages-wrapper">
+      <div className="messages-header">
+        <h1>Contact Messages</h1>
+        <span className="unread-badge">{unreadCount} unread</span>
+      </div>
 
-          {unreadCount} unread
-</span>
-</div>
- 
       <div className="search-box">
-<Search size={16} />
-<input
-
+        <Search size={16} />
+        <input
           placeholder="Search..."
-
           value={search}
-
-          onChange={(e) => setSearch(e.target.value)}
-
+          onChange={(event) => setSearch(event.target.value)}
         />
-</div>
- 
+      </div>
+
+      {error && <div className="pipeline-feedback is-error">{error}</div>}
       {loading && <p>Loading...</p>}
- 
+
       <table className="messages-table">
-<thead>
-<tr>
-<th>Sender</th>
-<th>Subject</th>
-<th>Status</th>
-<th>Received</th>
-<th>Actions</th>
-</tr>
-</thead>
- 
+        <thead>
+          <tr>
+            <th>Sender</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Received</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
         <tbody>
-
-          {filtered.map((msg) => (
-<tr key={msg.id}>
-<td>
-<strong>{msg.name}</strong>
-<br />
-<small>{msg.email}</small>
-</td>
- 
-              <td>{msg.subject}</td>
- 
+          {filteredMessages.map((message) => (
+            <tr key={message.id}>
               <td>
-<span
+                <strong>{message.name}</strong>
+                <br />
+                <small>{message.email}</small>
+              </td>
 
-                 className={`status ${msg.status === "Read" ? "read" : "unread"}`}
->
+              <td>{message.subject}</td>
 
-                 {msg.status === "Read" ? "Read" : "Unread"}
-</span>
-</td>
- 
               <td>
-<Clock size={12} />
+                <span className={`status ${message.status === "Read" ? "read" : "unread"}`}>
+                  {message.status === "Read" ? "Read" : "Unread"}
+                </span>
+              </td>
 
-                {msg.createdDate
-
-                  ? new Date(msg.createdDate).toLocaleDateString()
-
-                  : ""}
-</td>
- 
               <td>
-<button onClick={() => openMessage(msg.id)}>
-<Eye size={14} />
-</button>
- 
-                <button onClick={() => setDeleteMsg(msg)}>
-<Trash2 size={14} />
-</button>
-</td>
-</tr>
+                <Clock size={12} />
+                {message.createdDate ? new Date(message.createdDate).toLocaleDateString() : ""}
+              </td>
 
+              <td>
+                <button onClick={() => openMessage(message.id)}>
+                  <Eye size={14} />
+                </button>
+
+                <button onClick={() => setDeleteMsg(message)}>
+                  <Trash2 size={14} />
+                </button>
+              </td>
+            </tr>
           ))}
-</tbody>
-</table>
- 
-      {/* VIEW MODAL */}
+        </tbody>
+      </table>
 
       {selected && (
-<div className="modal-overlay">
-<div className="modal">
-<h3>{selected.subject}</h3>
-<p>
-
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>{selected.subject}</h3>
+            <p>
               From: {selected.name} ({selected.email})
-</p>
- 
-            <div className="message-box">
+            </p>
 
-              {selected.message}
-</div>
- 
-           <div className="modal-actions">
-<button onClick={() => setSelected(null)}>
-Close
-</button>
-</div>
-</div>
-</div>
+            <div className="message-box">{selected.message}</div>
 
+            <div className="modal-actions">
+              <button onClick={() => setSelected(null)}>Close</button>
+            </div>
+          </div>
+        </div>
       )}
- 
-      {/* DELETE MODAL */}
 
       {deleteMsg && (
-<div className="modal-overlay">
-<div className="modal">
-<h3>Delete Message</h3>
-<p>Delete message from {deleteMsg.name}?</p>
- 
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Delete Message</h3>
+            <p>Delete message from {deleteMsg.name}?</p>
+
             <div className="modal-actions">
-<button onClick={() => setDeleteMsg(null)}>
-
-                Cancel
-</button>
- 
-              <button
-
-                className="delete-btn"
-
-                onClick={handleDelete}
->
-
+              <button onClick={() => setDeleteMsg(null)}>Cancel</button>
+              <button className="delete-btn" onClick={handleDelete}>
                 Delete
-</button>
-</div>
-</div>
-</div>
-
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-</div>
-
+    </div>
   );
-
 };
- 
+
 export default ContactMessages;

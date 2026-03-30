@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { getAdminToken } from "./adminAuth";
+import { getAdminToken } from "../../services/adminAuth";
 
 const RequireAdminAuth = ({ children }) => {
   const location = useLocation();

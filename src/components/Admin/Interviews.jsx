@@ -1,14 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { CalendarDays, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
-import { clearAdminToken, getAdminHeaders, getAdminToken } from "./adminAuth";
+import { clearAdminToken, getAdminHeaders, getAdminToken } from "../../services/adminAuth";
 import {
   getApplicationSelectedDate,
   normalizeApplicationStatus,
-} from "./applicationStatus";
-import { useAdminApplications } from "./applicationsContext";
-import { DEFAULT_INTERVIEW_MANAGER_ID, INTERVIEW_API_BASE } from "./interviewApi";
+} from "../../services/applicationStatus";
+import { useAdminApplications } from "../../hooks/useAdminApplications";
+import {
+  DEFAULT_INTERVIEW_MANAGER_ID,
+  getInterviews,
+  updateInterview,
+} from "../../services/interviewsService";
+import { getErrorMessage, isUnauthorizedError } from "../../services/apiClient";
+import InterviewScheduleModal from "./InterviewScheduleModal";
 
 const interviewStatusConfig = {
   scheduled: { label: "Scheduled", tone: "scheduled" },
@@ -37,11 +43,6 @@ const getScheduleFormFromCandidate = (candidate) => ({
 const normalizeInterviewStatus = (status) => {
   const normalized = String(status || "").toLowerCase();
   return interviewStatusOptions.includes(normalized) ? normalized : "scheduled";
-};
-
-const formatInterviewStatusForApi = (status) => {
-  const normalized = normalizeInterviewStatus(status);
-  return interviewStatusConfig[normalized].label;
 };
 
 const normalizeInterviewMode = (mode) =>
@@ -95,98 +96,24 @@ const formatDateTime = (date, time) => {
   });
 };
 
-const getInterviewDateTimeParts = (interview) => {
-  const scheduledAt =
-    interview.scheduledAt || interview.scheduledFor || interview.scheduledDateTime || "";
-
-  return {
-    date:
-      interview.interviewDate ||
-      interview.date ||
-      interview.scheduledDate ||
-      scheduledAt,
-    time:
-      interview.interviewTime ||
-      interview.time ||
-      interview.scheduledTime ||
-      scheduledAt,
-  };
-};
-
-const getInterviewerName = (interview) => {
-  const interviewer = interview.interviewer || interview.manager || interview.owner || null;
-
-  if (typeof interviewer === "string") {
-    return interviewer;
-  }
-
-  return (
-    interview.managerName ||
-    interview.interviewerName ||
-    interview.ownerName ||
-    interviewer?.name ||
-    interviewer?.fullName ||
-    ""
-  );
-};
-
-const getInterviewerId = (interview) => {
-  const interviewer = interview.interviewer || interview.manager || interview.owner || null;
-
-  return (
-    interview.managerId ||
-    interview.interviewerId ||
-    interview.ownerId ||
-    interviewer?.id ||
-    DEFAULT_INTERVIEW_MANAGER_ID
-  );
-};
-
-const normalizeInterview = (interview) => {
-  const application =
-    interview.application ||
-    interview.jobApplication ||
-    interview.candidateApplication ||
-    {};
-  const candidate = interview.candidate || interview.applicant || {};
-  const scheduled = getInterviewDateTimeParts(interview);
-
-  return {
-    id: interview.id || interview.interviewId,
-    applicationId: interview.applicationId || application.id || interview.jobApplicationId || null,
-    candidateName:
-      interview.candidateName ||
-      interview.name ||
-      application.name ||
-      candidate.name ||
-      "Unknown candidate",
-    email:
-      interview.email ||
-      application.email ||
-      candidate.email ||
-      interview.candidateEmail ||
-      "",
-    jobTitle:
-      interview.jobTitle ||
-      application.jobTitle ||
-      interview.position ||
-      interview.role ||
-      "",
-    interviewDate: formatDateForInput(scheduled.date),
-    interviewTime: formatTimeForInput(scheduled.time),
-    mode: normalizeInterviewMode(interview.mode || interview.interviewMode),
-    status: normalizeInterviewStatus(interview.status),
-    managerId: getInterviewerId(interview),
-    managerName: getInterviewerName(interview),
-    meetingLink: interview.meetingLink || interview.interviewLink || "",
-    notes: interview.notes || interview.interviewNotes || "",
-    applicationStatus: normalizeApplicationStatus(
-      application.status || interview.applicationStatus || interview.candidateStatus
-    ),
-    selectedDate: getApplicationSelectedDate({ ...application, ...interview }),
-    isScheduled: true,
-  };
-};
+const normalizeInterview = (interview) => ({
+  id: interview.id,
+  applicationId: interview.applicationId || null,
+  candidateName: interview.candidateName || "Unknown candidate",
+  email: interview.email || "",
+  jobTitle: interview.jobTitle || "",
+  interviewDate: formatDateForInput(interview.interviewDate),
+  interviewTime: formatTimeForInput(interview.interviewTime),
+  mode: normalizeInterviewMode(interview.mode),
+  status: normalizeInterviewStatus(interview.status),
+  managerId: interview.managerId || DEFAULT_INTERVIEW_MANAGER_ID,
+  managerName: interview.managerName || `Manager #${interview.managerId || DEFAULT_INTERVIEW_MANAGER_ID}`,
+  meetingLink: interview.meetingLink || "",
+  notes: interview.instructions || interview.notes || "",
+  applicationStatus: normalizeApplicationStatus(interview.applicationStatus),
+  selectedDate: getApplicationSelectedDate(interview),
+  isScheduled: true,
+});
 
 const createShortlistedCandidateRow = (application) => ({
   id: `application-${application.id}`,
@@ -206,23 +133,6 @@ const createShortlistedCandidateRow = (application) => ({
   selectedDate: getApplicationSelectedDate(application),
   isScheduled: false,
 });
-
-const getApiErrorMessage = (responseData, fallbackMessage) => {
-  const validationErrors = Object.values(responseData?.errors || {})
-    .flat()
-    .filter(Boolean);
-
-  if (validationErrors.length > 0) {
-    return validationErrors.join(" ");
-  }
-
-  return (
-    responseData?.message ||
-    responseData?.error ||
-    responseData?.title ||
-    fallbackMessage
-  );
-};
 
 const Interviews = () => {
   const navigate = useNavigate();
@@ -245,6 +155,7 @@ const Interviews = () => {
   const [scheduleForm, setScheduleForm] = useState(createEmptyScheduleForm());
   const [scheduleErrors, setScheduleErrors] = useState({});
   const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
+  const deferredSearch = useDeferredValue(search);
 
   const handleUnauthorized = useCallback(() => {
     clearAdminToken();
@@ -262,40 +173,23 @@ const Interviews = () => {
     return headers;
   }, [navigate, token]);
 
-  const fetchInterviews = useCallback(async () => {
+  const fetchInterviewList = useCallback(async () => {
     try {
       setLoading(true);
       const headers = getHeaders();
       if (!headers) return;
 
-      const response = await fetch(INTERVIEW_API_BASE, { headers });
-
-      if (response.status === 401) {
+      const list = await getInterviews(headers);
+      setInterviews(list.map(normalizeInterview));
+    } catch (requestError) {
+      if (isUnauthorizedError(requestError)) {
         handleUnauthorized();
         return;
       }
 
-      const responseData = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(
-          responseData?.message ||
-            responseData?.error ||
-            responseData?.title ||
-            "Unable to load interviews."
-        );
-      }
-
-      const list = Array.isArray(responseData)
-        ? responseData
-        : responseData?.interviews || responseData?.data || [];
-
-      setInterviews(list.map(normalizeInterview));
-    } catch (error) {
-      console.error("[Interviews] Fetch error:", error.response?.data || error.message || error);
       setFeedback({
         type: "error",
-        text: error.message || "Unable to load interviews.",
+        text: getErrorMessage(requestError, "Unable to load interviews."),
       });
     } finally {
       setLoading(false);
@@ -308,8 +202,8 @@ const Interviews = () => {
       return;
     }
 
-    fetchInterviews();
-  }, [fetchInterviews, navigate, token]);
+    fetchInterviewList();
+  }, [fetchInterviewList, navigate, token]);
 
   const applicationById = useMemo(
     () => new Map(applications.map((application) => [String(application.id), application])),
@@ -366,7 +260,7 @@ const Interviews = () => {
   }, [mergedInterviews, scheduledApplicationIds, shortlistedCandidates]);
 
   const filteredInterviews = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = deferredSearch.trim().toLowerCase();
 
     return interviewRows.filter((interview) => {
       const matchesSearch =
@@ -381,7 +275,7 @@ const Interviews = () => {
 
       return matchesSearch && matchesFilter;
     });
-  }, [filter, interviewRows, search]);
+  }, [deferredSearch, filter, interviewRows]);
 
   const handleMarkSelected = async (interview) => {
     if (!interview?.applicationId) {
@@ -415,10 +309,9 @@ const Interviews = () => {
         text: "Candidate moved to Selected Candidates successfully.",
       });
     } catch (error) {
-      console.error("[Interviews] Candidate selection error:", error.response?.data || error.message || error);
       setFeedback({
         type: "error",
-        text: error.message || "Unable to mark candidate as selected.",
+        text: getErrorMessage(error, "Unable to mark candidate as selected."),
       });
     } finally {
       setSelectionUpdatingId(null);
@@ -449,10 +342,9 @@ const Interviews = () => {
         text: `${interview.candidateName} rejected successfully.`,
       });
     } catch (error) {
-      console.error("[Interviews] Candidate rejection error:", error.response?.data || error.message || error);
       setFeedback({
         type: "error",
-        text: error.message || "Unable to reject candidate.",
+        text: getErrorMessage(error, "Unable to reject candidate."),
       });
     } finally {
       setRejectUpdatingId(null);
@@ -522,32 +414,21 @@ const Interviews = () => {
         const headers = getHeaders();
         if (!headers) return;
 
-        const payload = {
-          interviewDate: formatDateForApi(scheduleForm.interviewDate),
-          interviewTime: `${scheduleForm.interviewTime}:00`,
-          mode: scheduleForm.mode,
-          meetingLink:
-            scheduleForm.mode === "Online" ? scheduleForm.meetingLink.trim() : "",
-          notes: scheduleForm.notes.trim(),
-          managerId: DEFAULT_INTERVIEW_MANAGER_ID,
-          status: formatInterviewStatusForApi(scheduleCandidate.status || "scheduled"),
-        };
-
-        const response = await fetch(`${INTERVIEW_API_BASE}/${scheduleCandidate.id}`, {
-          method: "PUT",
+        await updateInterview({
+          interviewId: scheduleCandidate.id,
           headers,
-          body: JSON.stringify(payload),
+          payload: {
+            interviewDate: formatDateForApi(scheduleForm.interviewDate),
+            interviewTime: `${scheduleForm.interviewTime}:00`,
+            mode: scheduleForm.mode,
+            meetingLink:
+              scheduleForm.mode === "Online" ? scheduleForm.meetingLink.trim() : "",
+            instructions: scheduleForm.notes.trim(),
+            notes: scheduleForm.notes.trim(),
+            managerId: String(DEFAULT_INTERVIEW_MANAGER_ID),
+            status: scheduleCandidate.status || "scheduled",
+          },
         });
-        const responseData = await response.json().catch(() => null);
-
-        if (response.status === 401) {
-          handleUnauthorized();
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(getApiErrorMessage(responseData, "Unable to schedule interview."));
-        }
       } else {
         const result = await scheduleInterview({
           applicationId: scheduleCandidate.applicationId,
@@ -565,17 +446,21 @@ const Interviews = () => {
         }
       }
 
-      await fetchInterviews();
+      await fetchInterviewList();
       setFeedback({
         type: "success",
         text: `${scheduleCandidate.candidateName} scheduled successfully.`,
       });
       closeScheduleModal();
     } catch (error) {
-      console.error("[Interviews] Schedule error:", error.response?.data || error.message || error);
+      if (isUnauthorizedError(error)) {
+        handleUnauthorized();
+        return;
+      }
+
       setFeedback({
         type: "error",
-        text: error.message || "Unable to schedule interview.",
+        text: getErrorMessage(error, "Unable to schedule interview."),
       });
     } finally {
       setScheduleSubmitting(false);
@@ -752,108 +637,16 @@ const Interviews = () => {
       </div>
 
       {scheduleOpen && scheduleCandidate && (
-        <div className="modal-overlay interviews-modal-overlay">
-          <div className="modal large interviews-modal">
-            <h3>Schedule Interview</h3>
-            <p className="interviews-modal-subtitle">
-              {scheduleCandidate.candidateName} | {scheduleCandidate.jobTitle || "Interview"}
-            </p>
-
-            <form onSubmit={handleScheduleSubmit} className="interviews-form-grid">
-              <div className="interviews-field">
-                <label htmlFor="schedule-date">Interview Date</label>
-                <input
-                  id="schedule-date"
-                  type="date"
-                  value={scheduleForm.interviewDate}
-                  onChange={(event) =>
-                    handleScheduleFieldChange("interviewDate", event.target.value)
-                  }
-                />
-                {scheduleErrors.interviewDate && (
-                  <small className="interviews-field-error">{scheduleErrors.interviewDate}</small>
-                )}
-              </div>
-
-              <div className="interviews-field">
-                <label htmlFor="schedule-time">Interview Time</label>
-                <input
-                  id="schedule-time"
-                  type="time"
-                  value={scheduleForm.interviewTime}
-                  onChange={(event) =>
-                    handleScheduleFieldChange("interviewTime", event.target.value)
-                  }
-                />
-                {scheduleErrors.interviewTime && (
-                  <small className="interviews-field-error">{scheduleErrors.interviewTime}</small>
-                )}
-              </div>
-
-              <div className="interviews-field">
-                <label htmlFor="schedule-mode">Mode</label>
-                <select
-                  id="schedule-mode"
-                  value={scheduleForm.mode}
-                  onChange={(event) => handleScheduleFieldChange("mode", event.target.value)}
-                >
-                  <option value="Online">Online</option>
-                  <option value="Offline">Offline</option>
-                </select>
-              </div>
-
-              <div className="interviews-field">
-                <label htmlFor="schedule-manager">Manager</label>
-                <input
-                  id="schedule-manager"
-                  type="text"
-                  value={`Manager #${DEFAULT_INTERVIEW_MANAGER_ID}`}
-                  disabled
-                />
-              </div>
-
-              <div className="interviews-field interviews-field-full">
-                <label htmlFor="schedule-link">Meeting Link</label>
-                <input
-                  id="schedule-link"
-                  type="url"
-                  value={scheduleForm.meetingLink}
-                  onChange={(event) =>
-                    handleScheduleFieldChange("meetingLink", event.target.value)
-                  }
-                  placeholder={
-                    scheduleForm.mode === "Online"
-                      ? "https://meet.example.com/..."
-                      : "Optional for offline interviews"
-                  }
-                />
-                {scheduleErrors.meetingLink && (
-                  <small className="interviews-field-error">{scheduleErrors.meetingLink}</small>
-                )}
-              </div>
-
-              <div className="interviews-field interviews-field-full">
-                <label htmlFor="schedule-notes">Notes</label>
-                <textarea
-                  id="schedule-notes"
-                  rows="4"
-                  value={scheduleForm.notes}
-                  onChange={(event) => handleScheduleFieldChange("notes", event.target.value)}
-                  placeholder="Optional instructions for the candidate or panel"
-                />
-              </div>
-
-              <div className="modal-actions interviews-modal-actions">
-                <button type="button" onClick={closeScheduleModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="save-btn" disabled={scheduleSubmitting}>
-                  {scheduleSubmitting ? "Scheduling..." : "Schedule"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <InterviewScheduleModal
+          scheduleCandidate={scheduleCandidate}
+          scheduleForm={scheduleForm}
+          scheduleErrors={scheduleErrors}
+          managerLabel={`Manager #${DEFAULT_INTERVIEW_MANAGER_ID}`}
+          submitting={scheduleSubmitting}
+          onChange={handleScheduleFieldChange}
+          onClose={closeScheduleModal}
+          onSubmit={handleScheduleSubmit}
+        />
       )}
     </div>
   );

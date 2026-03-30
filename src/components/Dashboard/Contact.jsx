@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Mail, MapPin, Phone } from "lucide-react";
 import SectionWrapper from "../../components/common/SectionWrapper";
+import { getErrorMessage } from "../../services/apiClient";
+import { submitContactMessage } from "../../services/contactService";
 
 const locationGroups = [
   {
@@ -76,25 +78,12 @@ const ContactUs = () => {
     const selectedPurpose = formData.purposeOfContact;
 
     try {
-      const response = await fetch(
-        "/api/Contact",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...formData,
-            name: formData.name.trim(),
-            purposeOfContact: selectedPurpose,
-            subject: selectedPurpose,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-
-      await response.json();
+      await submitContactMessage({
+        ...formData,
+        name: formData.name.trim(),
+        purposeOfContact: selectedPurpose,
+        subject: selectedPurpose,
+      });
       setStatus("success");
       setFormData({
         name: "",
@@ -102,8 +91,9 @@ const ContactUs = () => {
         purposeOfContact: "",
         message: "",
       });
-    } catch {
-      setStatus("error");
+    } catch (error) {
+      console.error("[Contact] Submit error:", error);
+      setStatus(getErrorMessage(error, "Something went wrong. Try again."));
     } finally {
       setLoading(false);
     }
@@ -197,9 +187,9 @@ const ContactUs = () => {
                   Message sent successfully.
                 </div>
               )}
-              {status === "error" && (
+              {status && status !== "success" && (
                 <div className="status-message status-error">
-                  Something went wrong. Try again.
+                  {status}
                 </div>
               )}
             </form>

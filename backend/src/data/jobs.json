@@ -1,0 +1,44 @@
+[
+  {
+    "id": "job-001",
+    "jobTitle": "Full Stack Developer",
+    "workLocation": "Hyderabad",
+    "jobType": "full-time",
+    "status": "open",
+    "experience": "3-5 years",
+    "ctc": "8-12 LPA",
+    "highestQualification": "B.Tech / MCA",
+    "jobDescription": "Build and maintain React and Node.js applications for client delivery teams.",
+    "mandatorySkills": "React, Node.js, REST APIs, SQL, Docker",
+    "createdAt": "2026-03-01T09:00:00.000Z",
+    "updatedAt": "2026-03-20T09:00:00.000Z"
+  },
+  {
+    "id": "job-002",
+    "jobTitle": "QA Automation Engineer",
+    "workLocation": "Bangalore",
+    "jobType": "hybrid",
+    "status": "open",
+    "experience": "2-4 years",
+    "ctc": "7-10 LPA",
+    "highestQualification": "B.E / B.Tech",
+    "jobDescription": "Own regression automation and quality gates for web and enterprise releases.",
+    "mandatorySkills": "Playwright, API testing, CI/CD, JavaScript",
+    "createdAt": "2026-03-03T10:00:00.000Z",
+    "updatedAt": "2026-03-22T10:00:00.000Z"
+  },
+  {
+    "id": "job-003",
+    "jobTitle": "SAP Technical Consultant",
+    "workLocation": "Chennai",
+    "jobType": "full-time",
+    "status": "closed",
+    "experience": "5-7 years",
+    "ctc": "15-20 LPA",
+    "highestQualification": "B.Tech / MBA",
+    "jobDescription": "Support SAP modernization and integration initiatives for enterprise clients.",
+    "mandatorySkills": "SAP ABAP, Integration, Solution Architecture",
+    "createdAt": "2026-02-25T08:30:00.000Z",
+    "updatedAt": "2026-03-05T08:30:00.000Z"
+  }
+]

@@ -1,24 +1,21 @@
-version: "3.8"
-
 services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/src/data:/app/src/data
+      - ./backend/storage:/app/storage
+    ports:
+      - "5001:5001"
+
   frontend:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    ports:
-      - "80:80"
     depends_on:
       - backend
-    restart: always
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
     ports:
-      - "5000:5000"
-    env_file:
-      - ./backend/.env
-    volumes:
-      - ./backend/data:/app/data
-      - ./backend/uploads:/app/uploads
+      - "5000:80"

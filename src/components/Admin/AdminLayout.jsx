@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import "./Admin.css";
-import { clearAdminToken } from "./adminAuth";
+import { clearAdminToken } from "../../services/adminAuth";
 
 const navItems = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard },

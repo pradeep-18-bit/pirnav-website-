@@ -1,0 +1,17 @@
+[
+  {
+    "id": "interview-001",
+    "applicationId": "app-003",
+    "interviewDate": "2026-04-02",
+    "interviewTime": "10:30:00",
+    "mode": "Online",
+    "meetingLink": "https://meet.example.com/rohan-iyer",
+    "instructions": "Please join 10 minutes early and keep your portfolio ready.",
+    "notes": "Panel round with engineering lead.",
+    "managerId": "1",
+    "managerName": "Manager #1",
+    "status": "scheduled",
+    "createdAt": "2026-03-29T14:00:00.000Z",
+    "updatedAt": "2026-03-29T14:00:00.000Z"
+  }
+]

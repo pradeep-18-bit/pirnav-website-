@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Admin.css";
-import { clearAdminToken, getAdminHeaders, getAdminToken } from "./adminAuth";
+import { clearAdminToken, getAdminHeaders, getAdminToken } from "../../services/adminAuth";
 import {
-  JOB_APPLICATIONS_API_BASE,
   applicationStatusLabels,
   applicationStatusOptions,
   normalizeApplicationStatus,
-} from "./applicationStatus";
-import { useAdminApplications } from "./applicationsContext";
+} from "../../services/applicationStatus";
+import { useAdminApplications } from "../../hooks/useAdminApplications";
+import { downloadResume as downloadResumeRequest } from "../../services/applicationsService";
+import { getErrorMessage, isUnauthorizedError } from "../../services/apiClient";
 
 const formatInterviewSummary = (details) => {
   if (!details?.date || !details?.time) {
@@ -90,38 +91,28 @@ const CandidateDetailsModal = ({ candidateId, onClose, title = "Application Deta
         return;
       }
 
-      const response = await fetch(`${JOB_APPLICATIONS_API_BASE}/download/${candidate.id}`, {
-        method: "GET",
+      const blob = await downloadResumeRequest({
+        applicationId: candidate.id,
         headers,
       });
-
-      if (response.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Download failed");
-      }
-
-      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const anchor = document.createElement("a");
 
       anchor.href = url;
-      anchor.download = "resume.pdf";
+      anchor.download = `${candidate.name.replace(/\s+/g, "-").toLowerCase()}-resume`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error(
-        "[CandidateDetailsModal] Resume download error:",
-        error.response?.data || error.message || error
-      );
+      if (isUnauthorizedError(error)) {
+        handleUnauthorized();
+        return;
+      }
+
       setFeedback({
         type: "error",
-        text: error.message || "Unable to download resume.",
+        text: getErrorMessage(error, "Unable to download resume."),
       });
     }
   };

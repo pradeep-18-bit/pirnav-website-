@@ -1,16 +1,16 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+COPY backend/package*.json ./
+RUN npm ci --omit=dev
 
-COPY . .
+COPY backend/ ./
 
 ENV NODE_ENV=production
-ENV PORT=5000
+ENV PORT=5001
 
-EXPOSE 5000
+EXPOSE 5001
 
-CMD ["node", "src/server.js"]
+CMD ["npm", "run", "start"]
 
