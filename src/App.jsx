@@ -6,41 +6,41 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import Navbar from "./Components/Navbar/Navbar.jsx";
-import Dashboard from "./Components/Dashboard/Dashboard.jsx";
-import Contact from "./Components/Dashboard/Contact.jsx";
-import About from "./Components/Dashboard/about.jsx";
-import Products from "./Components/Dashboard/Products.jsx";
-import ProductDetails from "./Components/Dashboard/ProductDetails.jsx";
-import Footer from "./Components/Dashboard/Footer.jsx";
-import PublicServices from "./Components/Services/OurServices.jsx";
-import Careers from "./Components/Dashboard/Careers.jsx";
-import JobDetails from "./Components/Dashboard/JobDetails.jsx";
+import Navbar from "./components/Navbar/Navbar.jsx";
+import Dashboard from "./components/Dashboard/Dashboard.jsx";
+import Contact from "./components/Dashboard/Contact.jsx";
+import About from "./components/Dashboard/about.jsx";
+import Products from "./components/Dashboard/Products.jsx";
+import ProductDetails from "./components/Dashboard/ProductDetails.jsx";
+import Footer from "./components/Dashboard/Footer.jsx";
+import PublicServices from "./components/Services/OurServices.jsx";
+import Careers from "./components/Dashboard/Careers.jsx";
+import JobDetails from "./components/Dashboard/JobDetails.jsx";
 
 // Admin Imports
-import AdminLayout from "./Components/Admin/AdminLayout.jsx";
-import AdminLogin from "./Components/Admin/AdminLogin.jsx";
-import RequireAdminAuth from "./Components/Admin/RequireAdminAuth.jsx";
-import { AdminApplicationsProvider } from "./Components/Admin/applicationsContext.jsx";
-import DashboardHome from "./Components/Admin/DashboardHome.jsx";
-import ContactMessages from "./Components/Admin/ContactMessages.jsx";
-import AdminJobs from "./Components/Admin/AdminJobs.jsx";
-import Applications from "./Components/Admin/Applications.jsx";
-import Interviews from "./Components/Admin/Interviews.jsx";
-import Pipeline from "./Components/Admin/Pipeline.jsx";
-import SelectedCandidates from "./Components/Admin/SelectedCandidates.jsx";
+import AdminLayout from "./components/Admin/AdminLayout.jsx";
+import AdminLogin from "./components/Admin/AdminLogin.jsx";
+import RequireAdminAuth from "./components/Admin/RequireAdminAuth.jsx";
+import { AdminApplicationsProvider } from "./components/Admin/applicationsContext.jsx";
+import DashboardHome from "./components/Admin/DashboardHome.jsx";
+import ContactMessages from "./components/Admin/ContactMessages.jsx";
+import AdminJobs from "./components/Admin/AdminJobs.jsx";
+import Applications from "./components/Admin/Applications.jsx";
+import Interviews from "./components/Admin/Interviews.jsx";
+import Pipeline from "./components/Admin/Pipeline.jsx";
+import SelectedCandidates from "./components/Admin/SelectedCandidates.jsx";
 
 //Sub pages
-import WebPage from "./Components/Services/WebPage.jsx";
-import MobilePage from "./Components/Services/MobilePage.jsx";
-import Microsoft from "./Components/Services/Microsoft.jsx";
-import Application from "./Components/Services/Applicationdevelopment.jsx";
-import Testing from "./Components/Services/Testing&Automation.jsx";
-import Maintainance from "./Components/Services/Maintainance&support.jsx";
-import SAP from "./Components/Services/SAP.jsx";
-import Oracle from "./Components/Services/Oracle.jsx";
-import ProfessionalPage from "./Components/Services/ProfessionalPage.jsx";
-import ServiceDetailPage from "./Components/Services/ServiceDetailPage.jsx";
+import WebPage from "./components/Services/WebPage.jsx";
+import MobilePage from "./components/Services/MobilePage.jsx";
+import Microsoft from "./components/Services/Microsoft.jsx";
+import Application from "./components/Services/Applicationdevelopment.jsx";
+import Testing from "./components/Services/Testing&Automation.jsx";
+import Maintainance from "./components/Services/Maintainance&support.jsx";
+import SAP from "./components/Services/SAP.jsx";
+import Oracle from "./components/Services/Oracle.jsx";
+import ProfessionalPage from "./components/Services/ProfessionalPage.jsx";
+import ServiceDetailPage from "./components/Services/ServiceDetailPage.jsx";
 
 function AppContent() {
   const location = useLocation();

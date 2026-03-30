@@ -1,4 +1,9 @@
+# ===============================
+
 # Logs
+
+# ===============================
+
 logs
 *.log
 npm-debug.log*
@@ -7,25 +12,77 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment variables
+# ===============================
+
+# Environment variables (IMPORTANT)
+
+# ===============================
+
 .env
+.env.*
+backend/.env
+
+# ===============================
+
+# Node modules & build output
+
+# ===============================
 
 node_modules
 dist
 dist-ssr
-*.local
+build
 
-# Editor directories and files
+# ===============================
+
+# Vite / frontend cache
+
+# ===============================
+
+.vite
+.cache
+
+# ===============================
+
+# OS & system files
+
+# ===============================
+
+.DS_Store
+Thumbs.db
+
+# ===============================
+
+# Editor / IDE files
+
+# ===============================
+
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Build output (common for .NET apps if you later add one)
+# ===============================
+
+# .NET (if backend expands later)
+
+# ===============================
+
 bin/
 obj/
+
+# ===============================
+
+# Uploads / runtime data (optional)
+
+# ===============================
+
+backend/uploads/*
+backend/data/*
+!backend/uploads/.gitkeep
+!backend/data/.gitkeep
+
